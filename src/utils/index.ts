@@ -1,32 +1,17 @@
-import type { SortDirection } from '../types';
-
-// Sort data by column
-export const sortData = <T>(
-  data: T[],
-  sortKey: keyof T,
-  direction: SortDirection
-): T[] => {
-  if (!direction) return data;
-
+// src/utils.ts
+export function sortData<T>(data: T[], key: keyof T, direction: 'asc' | 'desc'): T[] {
   return [...data].sort((a, b) => {
-    const aValue = a[sortKey];
-    const bValue = b[sortKey];
-
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return direction === 'asc'
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-
+    const aValue = a[key];
+    const bValue = b[key];
+    
+    if (aValue === bValue) return 0;
+    
+    const modifier = direction === 'asc' ? 1 : -1;
+    
     if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return direction === 'asc' ? aValue - bValue : bValue - aValue;
+      return (aValue - bValue) * modifier;
     }
-
-    return 0;
+    
+    return String(aValue).localeCompare(String(bValue)) * modifier;
   });
-};
-
-// Generate unique ID
-export const generateId = (prefix: string): string => {
-  return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
-};
+}

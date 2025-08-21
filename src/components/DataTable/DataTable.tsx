@@ -1,15 +1,11 @@
-import React, { useState, useMemo } from 'react';
+// src/components/DataTable/DataTable.tsx
+import { useState, useMemo, useCallback } from 'react';
 import { clsx } from 'clsx';
-import { 
-  ChevronUp, 
-  ChevronDown, 
-  Loader2,
-  AlertCircle
-} from 'lucide-react';
+import { ChevronUp, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
 import type { DataTableProps, SortDirection } from '../../types';
 import { sortData } from '../../utils';
 
-function DataTable<T>({
+function DataTable<T extends Record<string, any>>({
   data,
   columns,
   loading = false,
@@ -18,129 +14,105 @@ function DataTable<T>({
   rowKey,
   className = '',
 }: DataTableProps<T>) {
-  const [sortColumn, setSortColumn] = useState<keyof T | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [sortState, setSortState] = useState<{
+    column: keyof T | null;
+    direction: SortDirection;
+  }>({ column: null, direction: null });
   const [selectedRows, setSelectedRows] = useState<T[]>([]);
 
-  // Handle column sorting
-  const handleSort = (columnKey: keyof T) => {
-    if (sortColumn === columnKey) {
-      // Cycle through sort directions: asc -> desc -> none
-      if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else if (sortDirection === 'desc') {
-        setSortColumn(null);
-        setSortDirection(null);
+  const handleSort = useCallback((columnKey: keyof T) => {
+    setSortState(prev => {
+      if (prev.column !== columnKey) {
+        return { column: columnKey, direction: 'asc' };
       }
-    } else {
-      setSortColumn(columnKey);
-      setSortDirection('asc');
-    }
-  };
 
-  // Apply sorting to data
+      switch (prev.direction) {
+        case 'asc': return { column: columnKey, direction: 'desc' };
+        case 'desc': return { column: null, direction: null };
+        default: return { column: columnKey, direction: 'asc' };
+      }
+    });
+  }, []);
+
   const sortedData = useMemo(() => {
-    if (!sortColumn || !sortDirection) return data;
-    return sortData(data, sortColumn, sortDirection);
-  }, [data, sortColumn, sortDirection]);
+    if (!sortState.column || !sortState.direction) return data;
+    return sortData(data, sortState.column, sortState.direction);
+  }, [data, sortState]);
 
-  // Handle row selection
-  const toggleRowSelection = (row: T) => {
-    const isSelected = selectedRows.includes(row);
-    let newSelectedRows: T[];
+  const toggleRowSelection = useCallback((row: T) => {
+    setSelectedRows(prev => {
+      const isSelected = prev.includes(row);
+      const newSelectedRows = isSelected
+        ? prev.filter(r => r !== row)
+        : [...prev, row];
 
-    if (isSelected) {
-      newSelectedRows = selectedRows.filter(selectedRow => selectedRow !== row);
-    } else {
-      newSelectedRows = [...selectedRows, row];
-    }
+      onRowSelect?.(newSelectedRows);
+      return newSelectedRows;
+    });
+  }, [onRowSelect]);
 
+  const toggleSelectAll = useCallback(() => {
+    const newSelectedRows = selectedRows.length === sortedData.length ? [] : [...sortedData];
     setSelectedRows(newSelectedRows);
     onRowSelect?.(newSelectedRows);
-  };
+  }, [sortedData, selectedRows.length, onRowSelect]);
 
-  // Handle select all
-  const toggleSelectAll = () => {
-    if (selectedRows.length === sortedData.length) {
-      setSelectedRows([]);
-      onRowSelect?.([]);
-    } else {
-      setSelectedRows([...sortedData]);
-      onRowSelect?.([...sortedData]);
-    }
-  };
+  const getRowKey = useCallback((row: T, index: number): string => {
+    return rowKey && row[rowKey] ? String(row[rowKey]) : `row-${index}`;
+  }, [rowKey]);
 
-  // Get unique row identifier
-  const getRowKey = (row: T, index: number): string => {
-    if (rowKey && row[rowKey]) {
-      return String(row[rowKey]);
-    }
-    return `row-${index}`;
-  };
-
-  // Render sort indicator
   const renderSortIndicator = (columnKey: keyof T) => {
-    if (sortColumn !== columnKey) return null;
-    
-    return (
-      <span className="ml-1">
-        {sortDirection === 'asc' ? (
-          <ChevronUp className="h-4 w-4 inline" />
-        ) : (
-          <ChevronDown className="h-4 w-4 inline" />
-        )}
-      </span>
+    if (sortState.column !== columnKey) return null;
+    return sortState.direction === 'asc' ? (
+      <ChevronUp className="h-4 w-4 inline" />
+    ) : (
+      <ChevronDown className="h-4 w-4 inline" />
     );
   };
 
-  // Render cell content
   const renderCellContent = (column: any, row: T) => {
     if (column.render) {
       return column.render(row[column.dataIndex], row);
     }
-    
     const value = row[column.dataIndex];
-    return value !== null && value !== undefined ? String(value) : '—';
+    return value != null ? String(value) : '—';
   };
 
   if (loading) {
     return (
       <div className={clsx('w-full overflow-x-auto', className)}>
-        <div className="min-w-full divide-y divide-gray-200">
-          {/* Table header skeleton */}
-          <div className="bg-gray-50">
-            <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
               {selectable && (
-                <div className="col-span-1">
-                  <div className="h-4 bg-gray-200 rounded"></div>
-                </div>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                  <div className="h-4 bg-gray-200 rounded" />
+                </th>
               )}
-              {columns.map((_, index) => (
-                <div key={index} className="col-span-1">
-                  <div className="h-4 bg-gray-200 rounded"></div>
-                </div>
+              {columns.map((_, idx) => (
+                <th key={idx} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="h-4 bg-gray-200 rounded" />
+                </th>
               ))}
-            </div>
-          </div>
-          
-          {/* Table body skeleton */}
-          {[...Array(5)].map((_, rowIndex) => (
-            <div key={rowIndex} className="bg-white animate-pulse">
-              <div className="grid grid-cols-12 gap-4 px-6 py-4">
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(5)].map((_, idx) => (
+              <tr key={idx}>
                 {selectable && (
-                  <div className="col-span-1">
-                    <div className="h-4 bg-gray-200 rounded"></div>
-                  </div>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="h-4 bg-gray-200 rounded" />
+                  </td>
                 )}
-                {columns.map((_, colIndex) => (
-                  <div key={colIndex} className="col-span-1">
-                    <div className="h-4 bg-gray-200 rounded"></div>
-                  </div>
+                {columns.map((_, colIdx) => (
+                  <td key={colIdx} className="px-6 py-4 whitespace-nowrap">
+                    <div className="h-4 bg-gray-200 rounded" />
+                  </td>
                 ))}
-              </div>
-            </div>
-          ))}
-        </div>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   }
@@ -161,29 +133,22 @@ function DataTable<T>({
         <thead className="bg-gray-50">
           <tr>
             {selectable && (
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
-                    checked={selectedRows.length === sortedData.length && sortedData.length > 0}
-                    onChange={toggleSelectAll}
-                    aria-label="Select all rows"
-                  />
-                </div>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={selectedRows.length === sortedData.length}
+                  onChange={toggleSelectAll}
+                  aria-label="Select all rows"
+                />
               </th>
             )}
-            {columns.map((column) => (
+            {columns.map(column => (
               <th
-                key={column.key}
-                scope="col"
+                key={String(column.key)}
                 className={clsx(
                   'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
-                  column.sortable && 'cursor-pointer hover:bg-gray-100',
-                  column.width && 'data-table-column'
+                  column.sortable && 'cursor-pointer hover:bg-gray-100'
                 )}
                 onClick={() => column.sortable && handleSort(column.dataIndex)}
                 style={column.width ? { width: column.width } : undefined}
@@ -200,29 +165,26 @@ function DataTable<T>({
           {sortedData.map((row, index) => {
             const isSelected = selectedRows.includes(row);
             const rowId = getRowKey(row, index);
-            
+
             return (
               <tr
                 key={rowId}
-                className={clsx(
-                  'hover:bg-gray-50',
-                  isSelected && 'bg-blue-50'
-                )}
+                className={clsx('hover:bg-gray-50', isSelected && 'bg-blue-50')}
               >
                 {selectable && (
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       checked={isSelected}
                       onChange={() => toggleRowSelection(row)}
                       aria-label={`Select row ${index + 1}`}
                     />
                   </td>
                 )}
-                {columns.map((column) => (
+                {columns.map(column => (
                   <td
-                    key={`${rowId}-${column.key}`}
+                    key={String(column.key)}
                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
                   >
                     {renderCellContent(column, row)}

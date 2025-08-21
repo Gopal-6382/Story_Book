@@ -1,4 +1,4 @@
-// src/types.ts
+
 export type SortDirection = 'asc' | 'desc' | null;
 
 export interface Column<T> {

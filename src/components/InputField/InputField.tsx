@@ -1,4 +1,5 @@
-import React, { useState, forwardRef, useId, useCallback } from 'react';
+// src/components/InputField/InputField.tsx
+import React, { useState, forwardRef, useId, useCallback, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { Eye, EyeOff, X, Loader2 } from 'lucide-react';
 import type { InputFieldProps } from '../../types';
@@ -25,19 +26,23 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
     },
     ref
   ) => {
-    // Generate a unique ID for accessibility if not provided
     const generatedId = useId();
     const id = propId || generatedId;
     const helpTextId = `${id}-help`;
 
-    // State for password visibility
     const [inputType, setInputType] = useState(type);
+    const [internalValue, setInternalValue] = useState(value);
     const isPassword = type === 'password';
     const showToggle = isPassword && !disabled;
-    const canClear = showClearButton && value && !disabled;
+    const canClear = showClearButton && internalValue && !disabled;
 
-    // Handlers with useCallback for performance
+    // Sync internal value with external value changes
+    useEffect(() => {
+      setInternalValue(value);
+    }, [value]);
+
     const handleClear = useCallback(() => {
+      setInternalValue('');
       if (onChange) {
         const event = {
           target: { value: '' },
@@ -50,7 +55,11 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
       setInputType(prevType => prevType === 'password' ? 'text' : 'password');
     }, []);
 
-    // Variant styles with better organization
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      setInternalValue(e.target.value);
+      onChange?.(e);
+    }, [onChange]);
+
     const variantStyles = {
       filled: clsx(
         'bg-gray-50 border-0 focus:bg-white focus:ring-2 focus:ring-blue-500',
@@ -69,14 +78,12 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
       ),
     };
 
-    // Size styles
     const sizeStyles = {
-      sm: 'px-3 py-2 text-sm',
+      sm: 'px-3 py-1.5 text-sm',
       md: 'px-4 py-2.5 text-base',
       lg: 'px-5 py-3 text-lg',
     };
 
-    // Input classes with better organization
     const inputClasses = clsx(
       'w-full rounded-md transition-all duration-200 outline-none',
       'placeholder-gray-400 text-gray-900',
@@ -106,8 +113,8 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             ref={ref}
             id={id}
             type={inputType}
-            value={value}
-            onChange={onChange}
+            value={internalValue}
+            onChange={handleInputChange}
             placeholder={placeholder}
             disabled={disabled || loading}
             className={inputClasses}
@@ -117,7 +124,6 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             {...props}
           />
           
-          {/* Loading indicator */}
           {loading && (
             <div 
               className="absolute right-3 top-1/2 transform -translate-y-1/2"
@@ -127,7 +133,6 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             </div>
           )}
           
-          {/* Password visibility toggle */}
           {showToggle && !loading && (
             <button
               type="button"
@@ -144,7 +149,6 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             </button>
           )}
           
-          {/* Clear button */}
           {canClear && !loading && (
             <button
               type="button"
@@ -158,7 +162,6 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
           )}
         </div>
         
-        {/* Helper text or error message */}
         {(helperText || errorMessage) && (
           <p
             id={helpTextId}
