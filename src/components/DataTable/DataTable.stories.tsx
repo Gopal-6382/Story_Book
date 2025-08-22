@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react-webpack5";
+import type { Meta, StoryObj } from '@storybook/react';
 
 import DataTable from "./DataTable";
 import type { DataTableProps, Column } from "../../types";

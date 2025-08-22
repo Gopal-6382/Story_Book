@@ -118,9 +118,9 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             placeholder={placeholder}
             disabled={disabled || loading}
             className={inputClasses}
-            aria-invalid={invalid}
+            aria-invalid={String(invalid)}
             aria-describedby={helpTextId}
-            aria-busy={loading}
+            aria-busy={String(loading)}
             {...props}
           />
           
