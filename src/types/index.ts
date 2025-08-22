@@ -1,6 +1,9 @@
 // src/types.ts
+
+// Define SortDirection type
 export type SortDirection = 'asc' | 'desc' | null;
 
+// Define the Column interface
 export interface Column<T> {
   key: string;
   title: string;
@@ -10,6 +13,7 @@ export interface Column<T> {
   render?: (value: any, row: T) => React.ReactNode;
 }
 
+// Define the DataTableProps interface
 export interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
@@ -20,7 +24,9 @@ export interface DataTableProps<T> {
   className?: string;
 }
 
-export interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+// Define the InputFieldProps interface using Omit to fix the type conflict
+export interface InputFieldProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   helperText?: string;
   errorMessage?: string;

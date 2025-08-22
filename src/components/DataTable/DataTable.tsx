@@ -4,7 +4,6 @@ import { clsx } from 'clsx';
 import { ChevronUp, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
 import type { DataTableProps, SortDirection } from '../../types';
 import { sortData } from '../../utils';
-
 function DataTable<T extends Record<string, any>>({
   data,
   columns,
