@@ -13,6 +13,7 @@
     "test:coverage": "vitest --coverage",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+      "chromatic": "chromatic --project-token=chpt_73cc5d0ee4bd92c",
     "vercel-build": "npm install --legacy-peer-deps && npm run build"
   },
   "dependencies": {
