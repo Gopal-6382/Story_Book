@@ -1,5 +1,3 @@
-// src/types.ts
-
 // Define SortDirection type
 export type SortDirection = 'asc' | 'desc' | null;
 

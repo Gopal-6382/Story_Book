@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import DataTable from './DataTable'
 import { Column } from '../../types'; 
-// Adjust the path as neede
 
 interface TestData {
   id: number
@@ -25,9 +24,65 @@ const columns: Column<TestData>[] = [
   { key: 'age', title: 'Age', dataIndex: 'age', sortable: true },
 ];
 
-
 describe('DataTable', () => {
-  // ... (existing tests)
+  test('renders table with data', () => {
+    render(<DataTable data={testData} columns={columns} />)
+    
+    expect(screen.getByText('John Doe')).toBeInTheDocument()
+    expect(screen.getByText('jane@example.com')).toBeInTheDocument()
+    expect(screen.getByText('35')).toBeInTheDocument()
+  })
+
+  test('sorts data when column header is clicked', async () => {
+    const user = userEvent.setup()
+    render(<DataTable data={testData} columns={columns} />)
+    
+    const nameHeader = screen.getByText('Name')
+    await user.click(nameHeader)
+    
+    const nameCells = screen.getAllByRole('cell', { name: /John Doe|Jane Smith|Bob Johnson/ })
+    expect(nameCells[0]).toHaveTextContent('Bob Johnson')
+    
+    await user.click(nameHeader)
+    const nameCellsDesc = screen.getAllByRole('cell', { name: /John Doe|Jane Smith|Bob Johnson/ })
+    expect(nameCellsDesc[0]).toHaveTextContent('John Doe')
+  })
+
+  test('shows loading state', () => {
+    render(<DataTable data={[]} columns={columns} loading={true} />)
+    
+    const skeletonElements = document.querySelectorAll('.bg-gray-200.rounded')
+    expect(skeletonElements.length).toBeGreaterThan(0)
+  })
+
+  test('shows empty state', () => {
+    render(<DataTable data={[]} columns={columns} loading={false} />)
+    
+    expect(screen.getByText('No data found')).toBeInTheDocument()
+    expect(screen.getByText('There are no records to display.')).toBeInTheDocument()
+  })
+
+  test('selects rows when selectable', async () => {
+    const user = userEvent.setup()
+    const handleRowSelect = vi.fn()
+    
+    render(
+      <DataTable
+        data={testData}
+        columns={columns}
+        selectable={true}
+        onRowSelect={handleRowSelect}
+      />
+    )
+    
+    const checkboxes = screen.getAllByRole('checkbox')
+    await user.click(checkboxes[1])
+    
+    expect(handleRowSelect).toHaveBeenCalledWith([testData[0]])
+    
+    await user.click(checkboxes[0])
+    expect(handleRowSelect).toHaveBeenCalledWith(testData)
+  })
 
   test('renders custom cell content', () => {
     // Explicitly type the customColumns array to fix the type error
@@ -36,7 +91,7 @@ describe('DataTable', () => {
       {
         key: 'actions',
         title: 'Actions',
-        dataIndex: 'id', // Now correctly typed as 'id' is a key of TestData
+        dataIndex: 'id', 
         render: (value: number) => <button>Edit {value}</button>,
       },
     ]
