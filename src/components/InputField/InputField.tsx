@@ -107,7 +107,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             {label}
           </label>
         )}
-        
+
         <div className="relative">
           <input
             ref={ref}
@@ -118,21 +118,20 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             placeholder={placeholder}
             disabled={disabled || loading}
             className={inputClasses}
-            aria-invalid={String(invalid)}
+            aria-invalid={invalid}
             aria-describedby={helpTextId}
-            aria-busy={String(loading)}
+            aria-busy={loading} // Changed from String(loading) to just loading
             {...props}
           />
-          
           {loading && (
-            <div 
+            <div
               className="absolute right-3 top-1/2 transform -translate-y-1/2"
               aria-label="Loading"
             >
               <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
             </div>
           )}
-          
+
           {showToggle && !loading && (
             <button
               type="button"
@@ -148,7 +147,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
               )}
             </button>
           )}
-          
+
           {canClear && !loading && (
             <button
               type="button"
@@ -161,7 +160,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             </button>
           )}
         </div>
-        
+
         {(helperText || errorMessage) && (
           <p
             id={helpTextId}
